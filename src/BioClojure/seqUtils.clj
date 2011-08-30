@@ -1,16 +1,20 @@
-(ns BioClojure.seqUtils
-  (:use [clojure.pprint])
-  (:import (org.apache.commons.lang StringUtils)))
+
+ (ns BioClojure.seqUtils
+  (:use [clojure.pprint]))
+  ;(:import [org.apache.commons.lang StringUtils]))
 
 
 (defn transform-entry
   "Transform a meta string into a map of metadata about a DNA entry."
   [entry]
-  (let [meta-props (seq (-> (subs entry 1) ;; take off the leading ">"
+  (let [props (seq (-> (subs entry 1) ;; take off the leading ">"
                             (.split " ")))
-        name (first meta-props)
-        props (drop 1 meta-props)]
-    (assoc (into {} (map #(vec (.split % "=")) props)) "name" name)))
+       ; name (first meta-props)
+  first-name (first  props)
+	; this might lead to confusion because name is a Clojure function
+        props (rest props)]
+	;;cons is made up of head and tail ...
+    (assoc (into {} (map #(vec (.split % "=")) props)) "name" first-name)))
 
 (defn read-fasta-file
   "Read a FASTA file, transforming it into a map with :meta and :dna keys."
@@ -18,9 +22,12 @@
   (let [text (.trim (slurp filename))
         entries (-> text (.replaceAll "\r" "") (.split "\n\n") seq)]
     (map #(let [[m dna] (.split % "\n")]
-            {:meta (transform-entry m) :dna dna})
+  ; {:meta (transform-entry m) :dna dna}) to me :dna is expected to be a keyword by adding colon in front will not make it a keyword
+	    
+	    {:meta (transform-entry m) (keyword dna) dna})
          entries)))
-
+	 
+(comment
 (defn parse-fasta
   "parse a FASTA-formatted string, transforming it into a map with :meta and
   :dna keys."
@@ -28,13 +35,14 @@
   (let [text (.trim fasta-string)
         entries (-> text (.replaceAll "\r" "") (.split "\n\n") seq)]
     (map #(let [[m dna] (.split % "\n")]
-            {:meta (transform-entry m) :dna dna})
-         entries)))
+           ; {:meta (transform-entry m) :dna dna}) to me :dna is expected to be a keyword by adding colon in front will not make it a keyword
+    {:meta (transform-entry m) (keyword dna) dna})
+         entries))))
 
 (defn read-and-parse-fasta-file
   "Parse a file in fasta format"
   [filename]
-  (parse-fasta (slurp filename)))
+  (read-fasta-file filename))
 
 
 (defn read-motif-file
@@ -80,27 +88,27 @@
 
 ;;Define the 1-3 letter mapping.
 (def one-to-three
-  {"R" "ARG",
-   "H" "HIS",
-   "K" "LYS",
-   "D" "ASP",
-   "E" "GLU",
-   "S" "SER",
-   "T" "THR",
-   "N" "ASN",
-   "Q" "GLN",
-   "C" "CYS",
-   "U" "SEC", ;; interesting amino acid
-   "G" "GLY",
-   "P" "PRO",
-   "A" "ALA",
-   "V" "VAL",
-   "I" "ILE",
-   "L" "LEU",
-   "M" "MET",
-   "F" "PHE",
-   "Y" "TYR",
-   "W" "TRP"})
+  {\R "ARG",
+    \H "HIS",
+   \K "LYS",
+   \D "ASP",
+   \E "GLU",
+   \S "SER",
+   \T "THR",
+   \N "ASN",
+   \Q "GLN",
+   \C "CYS",
+   \U "SEC", ;; interesting amino acid
+   \G "GLY",
+   \P "PRO",
+   \A "ALA",
+   \V "VAL",
+   \I "ILE",
+   \L "LEU",
+   \M "MET",
+   \F "PHE",
+   \Y "TYR",
+   \W "TRP"})
 
 ;; This demonstrates two important distinctions in clojure (1) Strings
 ;; are "Sequences" : When we send "ABCDEFGH" as an argument to a "map"
@@ -114,8 +122,9 @@
   refactoring:  assumes capital letters; if letter not found, mapping function
   returns nil; accepts string instead of list"
   [string]
-  (let [convert (fn [c] (one-to-three (str c)))]
-    (map convert string)))
+ ; (let [convert (fn [c] (one-to-three (str c)))]
+ 
+    (map one-to-three string))
 
 
 (defn read-and-print
