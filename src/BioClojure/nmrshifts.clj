@@ -1,5 +1,5 @@
 (ns BioClojure.nmrshifts
-  (:use clojure.contrib.math)
+ (:use clojure.contrib.math)
   (:use clojure.set))
 
 (def approx-c-shifts
@@ -18,10 +18,10 @@
   types as a sorted list of pairs"
   [shift]
   ;; computer difference between shift and average shift for each nucleus type
-  (let [diffs (for [[atom avgshift] approx-c-shifts] 
-                (list atom (abs (- shift avgshift))))]
+  (let [diffs (for [[first-atom avgshift] approx-c-shifts] 
+                [ first-atom (abs (- shift avgshift))])]
     ;; return a sorted list (by shift difference)
-    (sort-by #(second %) diffs)))
+    (sort-by second diffs)))
 
 
 
@@ -61,18 +61,17 @@
   (cond
    (= nil ss-shift) 'not-in-ss
    (= nil aa-shift) 'not-in-aa
-   true (- ss-shift aa-shift)))
+   :else (- ss-shift aa-shift)))
 
 
 (defn compare-ss-to-aa
   "for each atom in spin system:
      compare to amino acid's atom (of same name)
    return:  map -- key is atom, value is comparison result"
-  [ss aa-atoms]
-  (let [all-atoms (union (set (keys aa-atoms)) 
-			 (set (keys ss)))]
-   (into {} (for [atom all-atoms]
-                 [atom (compare-atom (ss atom) (aa-atoms atom))]))))
+  [items]
+  (let [all-atoms (apply union (map #(set (keys %)) items))]
+   (into {} (for [first-atom all-atoms]
+                 [first-atom (compare-atom ((first items) first-atom) ((second items) first-atom))]))))
 
 
 ; (compare-ss-to-aas {"H" 3.32 "CA" 55})
@@ -87,16 +86,16 @@
 (defn best-match
   ""
   [comparison]
-  (let [key-fn (fn [[_ v]] v)] ; need to do absolute value, and need to filter out non-numeric values
-   (first (sort-by key-fn comparison))))
+ ;;not needed (let [key-fn (fn [[_ v]] v)] ; need to do absolute value, and need to filter out non-numeric values
+   (first (sort-by second comparison)))
 
 (defn worst-match
   ""
   [comparison]
-  (let [key-fn (fn [[_ v]] v)]
+ ;; (let [key-fn (fn [[_ v]] v)]
    (first 
      (reverse 
-       (sort-by key-fn comparison)))))
+       (sort-by second comparison))))
 
 (defn rank-comparison
   ""
